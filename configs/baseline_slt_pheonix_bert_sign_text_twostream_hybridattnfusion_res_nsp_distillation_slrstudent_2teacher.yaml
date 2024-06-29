@@ -1,0 +1,120 @@
+feeder: dataset.dataloader_video_pheonix_sign_text_2teacher_slt.BaseFeeder
+phase: train
+dataset: dialogue_pheonix
+dict: DatasetFile/dialogue_pheonix/vocab.txt
+# dataset: phoenix14-si5
+num_epoch: 300
+work_dir: /disk1/shipeng/slrsltBertPheonix/sign_only_transformer_usevacloss/20221006
+batch_size: 2
+random_seed: 0
+test_batch_size: 2
+num_worker: 2
+device: 3
+log_interval: 300
+eval_interval: 1
+save_interval: 1
+# python in default
+evaluate_tool: sclite  #python or sclite
+# ignore_weights: ['text_embedding']
+loss_weights:
+  ConvCTCSign: 1.0 # slr的1dcnn层loss
+  SeqCTCSign: 1.0 # slr的RNN层loss
+  TranslationCrossEntropy: 1.0 # slt的loss
+  DistFusion2SLR: 25.0 # 对话上文teacher的蒸馏loss 概率分布层面蒸馏
+  DistFusion2SLRFeature: 25.0 #对话上文teacher的蒸馏loss 特征层面蒸馏
+  Dist: 25.0 # slr的自监督loss 
+  DistTranslation2SLR: 1.0 # gloss2text teacher的蒸馏loss 概率分布层面蒸馏
+  DistTranslation2SLRFeature: 1.0 #gloss2text teacher的蒸馏loss 特征层面蒸馏
+  TranslationGlossCrossEntropy: 1.0 # gloss2text teacher的训练loss
+
+# load_weights_encoder2: /disk1/shipeng/slrBertPheonix_2_distillation/transformerstudent_2teacher_5_loss_25_25_10/20221003dev_18.90test_20.50_epoch96_model.pt
+load_weights_encoder2: /disk1/shipeng/slrBertPheonix_2_distillation/text_sign_loadPretrained_0layer_twostream_hybridattnfusion3layer_res_vac_loadPretrainVAC_slrstudent_2teacher_feature_new/20220905dev_18.40test_19.60_epoch69_model.pt
+load_weights_multimodalteacher: /disk1/shipeng/slrsltBertPheonix/slt_text_sign_loadPretrained_0layer_twostream_hybridattnfusion2layer_res_vac_loadPretrainVAC/20220824dev_19.90test_20.80_epoch82_model.pt
+# load_weights: /disk1/shipeng/slrBertPheonix_2_distillation/slt_text_sign_loadPretrained_0layer_twostream_hybridattnfusion3layer_res_vac_loadPretrainVAC_slrstudent_2teacher_gloss2textfirst/20220914dev_389.80test_398.70_epoch40_model.pt
+
+optimizer_args:
+  optimizer: Adam
+  base_lr: 0.0001
+  # step: [20, 40,60]   ####[ 40, 60]
+
+  step: [ 50, 70,90]   ####[ 40, 60]
+  learning_ratio: 1
+  weight_decay: 0.0001
+  start_epoch: 0
+  nesterov: False
+  bert_different_layer_lr: 'none'
+  # bert_different_layer_lr: 'freezeTextAndSign'
+
+feeder_args:
+  mode: 'train'
+  datatype: 'video'
+  num_gloss: -1
+  drop_ratio: 1.0
+  frame_interval: 1
+  # meaningless_frame_begin: 0
+  # meaningless_frame_end: 0
+  # meaningless_frame_begin_E: 2
+
+model: slr_slt_bert_network_sign_text_twostream_hybridattnfusion_res_GSL_nsp_vac_pheonix_loadPretrain_transformerstudent_2teacher_feature.SLRModel
+# model: slr_slt_bert_network_sign_text_twostream_hybridattnfusion_res_GSL_nsp_vac_pheonix_loadPretrain_slrstudent_2teacher_feature.SLRModel
+decode_mode: beam
+model_args:
+  c2d_type: resnet18
+  conv_type: 5
+  # mask_proportion: 0.3
+bert_args:
+  bert_model: bert-base-german-cased-v1
+  type_vocab_size: 2  # ??
+  relax_projection: 0 # ??
+  task_idx_proj: 3 #?? img2txt | vqa2| ctrl2 | visdial | visdial_short_hist | visdial_nsp
+  label_smoothing: 0
+  fp32_embedding: false
+  output_dir: /disk1/shipeng/slrBertPheonix
+  global_rank: 0
+  drop_prob: 0.1
+  len_vis_input: 36 #
+  visdial_v: 1.0
+  loss_type: ctc
+  neg_num: 0
+  adaptive_weight: 0
+  add_attn_fuse: 0
+  no_h0: 0
+  no_vision: 0
+  model_recover_path: null
+  config_path: null
+  max_position_embeddings: null
+  enable_butd: null
+  num_hidden_layers_sign: 2
+  num_hidden_layers_text: 0
+  num_hidden_layers_fusion: 3
+  num_hidden_layers_gloss2text: 2
+gloss2text_args: 
+  type: transformer
+  num_layers: 3
+  num_heads: 8
+  embeddings:
+      embedding_dim: 768
+      scale: false
+      dropout: 0.1
+      norm_type: batch
+      activation_type: softsign
+  hidden_size: 768
+  ff_size: 2048
+  dropout: 0.1
+slt_args: 
+  type: transformer
+  num_layers: 3
+  num_heads: 8
+  embeddings:
+      embedding_dim: 768
+      scale: false
+      dropout: 0.1
+      norm_type: batch
+      activation_type: softsign
+  hidden_size: 768
+  ff_size: 2048
+  dropout: 0.1
+
+
+
+
